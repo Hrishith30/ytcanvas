@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ROGERS PLAYS — Esports Live</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{height:100%;background:transparent !important}
+  body{
+    margin:0;background:transparent !important;
+    display:flex;align-items:center;justify-content:center;
+    min-height:100vh;overflow:hidden;
+    font-family:Impact,'Anton','Arial Black',sans-serif;
+  }
+  #stage{display:flex;align-items:center;justify-content:center;width:100%}
+  .wrap{position:relative;display:flex;align-items:center}
+
+  /* Circle — always visible, rotating effect */
+  .shield{
+    position:relative;width:150px;height:150px;flex:0 0 150px;z-index:2;
+    margin-right:-46px;border-radius:50%;background:#000;
+    box-shadow:
+      0 0 0 7px #FF0033,
+      0 0 0 11px #fff,
+      0 0 0 15px #0A3D9C,
+      0 0 0 18px #000,
+      0 14px 30px rgba(0,0,0,.55);
+  }
+  .shield img{
+    width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;
+    filter:contrast(1.15) saturate(1.2) brightness(1.12);
+  }
+  .orbit{
+    position:absolute;inset:-16px;border-radius:50%;pointer-events:none;
+    border:3px dashed rgba(255,255,255,.75);
+    border-top-color:#FF0033;border-bottom-color:#0A3D9C;
+    animation:spin 4s linear infinite;
+  }
+  .orbit2{
+    position:absolute;inset:-26px;border-radius:50%;pointer-events:none;
+    border:2px solid transparent;border-top-color:rgba(255,0,51,.9);
+    animation:spin 2.2s linear infinite reverse;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  /* punch when banner fires */
+  .shield.burst{animation:punch .7s ease}
+  @keyframes punch{0%{transform:scale(1)}30%{transform:scale(1.1)}60%{transform:scale(.97)}100%{transform:scale(1)}}
+
+  /* Side banner — hidden, slides out from circle */
+  .bar{
+    position:relative;
+    background:linear-gradient(90deg,#0b0b0b,#141414);
+    clip-path:polygon(0 0,100% 0,97.5% 100%,0 100%);
+    padding:16px 56px 16px 70px;
+    min-width:520px;
+    transform-origin:left center;
+    opacity:0;visibility:hidden;
+    transform:translateX(-40px) scaleX(.55);
+    transition:transform .65s cubic-bezier(.2,.9,.25,1.15), opacity .35s ease, visibility 0s linear .7s;
+  }
+  .bar.show{
+    opacity:1;visibility:visible;transform:translateX(0) scaleX(1);
+    transition:transform .65s cubic-bezier(.2,.9,.25,1.15), opacity .3s ease;
+  }
+  .bar::before,.bar::after{content:"";position:absolute;left:0;right:0;height:4px;background:#FF0033}
+  .bar::before{top:0}
+  .bar::after{bottom:0}
+
+  .live-row{display:flex;align-items:center;gap:10px}
+  .live{
+    display:inline-flex;align-items:center;gap:7px;
+    background:#FF0033;color:#fff;
+    font-family:Arial,sans-serif;font-weight:900;font-size:14px;letter-spacing:2px;
+    padding:5px 13px;border-radius:4px;transform:skewX(-10deg);
+    margin-left:8px;
+  }
+  .live i{width:10px;height:10px;border-radius:50%;background:#fff;animation:pulse 1.1s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+  .now{font-family:Arial,sans-serif;font-size:11px;letter-spacing:3px;color:#c9c9c9;font-weight:700}
+  .name{
+    margin-top:5px;font-size:58px;line-height:.9;letter-spacing:1px;white-space:nowrap;
+    font-style:italic;color:#fff;text-shadow:3px 3px 0 #000;
+  }
+  .accent{margin-top:8px;height:6px;width:100%;background:#FF0033;border-radius:99px}
+  /* route to target */
+  #livecount-link{
+    position:fixed;right:14px;bottom:12px;z-index:99;
+    font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;
+    color:#fff;text-decoration:none;background:rgba(0,0,0,.65);
+    border:1px solid rgba(255,255,255,.25);padding:7px 12px;border-radius:99px;
+  }
+  #livecount-link:hover{background:#FF0033;border-color:#FF0033}
+</style>
+</head>
+<body>
+<div id="stage">
+  <a id="livecount-link" href="./livecount.html">● TARGET →</a>
+  <div class="wrap">
+    <div class="shield" id="shield">
+      <span class="orbit"></span><span class="orbit2"></span>
+      <img src="./channels4_profile.jpg" alt="ROGERS PLAYS" />
+    </div>
+    <div class="bar" id="banner">
+      <div class="live-row"><span class="live"><i></i>LIVE</span><span class="now">● STREAMING NOW</span></div>
+      <div class="name">ROGERS PLAYS</div>
+      <div class="accent"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const INTERVAL_MS = 60 * 1000; // every 1 min
+  const VISIBLE_MS = 8000;       // banner stays 8s then disappears
+  const bar = document.getElementById('banner');
+  const shield = document.getElementById('shield');
+  let nextAt = Date.now() + INTERVAL_MS;
+  let showing = false;
+
+  function show(){
+    if(showing) return;
+    showing = true;
+    shield.classList.remove('burst'); void shield.offsetWidth; // restart punch
+    shield.classList.add('burst');
+    bar.classList.add('show');
+    setTimeout(hide, VISIBLE_MS);
+  }
+  function hide(){
+    bar.classList.remove('show');
+    showing = false;
+    nextAt = Date.now() + INTERVAL_MS;
+  }
+  setInterval(()=>{ if(!showing && Date.now() >= nextAt) show(); }, 250);
+  setTimeout(show, 1000); // demo on load
+})();
+</script>
+</body>
+</html>

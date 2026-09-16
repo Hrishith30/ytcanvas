@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ROGERS PLAYS — Target</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{height:100%;background:transparent !important}
+  body{
+    margin:0;background:transparent !important;
+    display:flex;align-items:center;justify-content:center;
+    min-height:100vh;overflow:hidden;
+    font-family:Impact,'Anton','Arial Black',sans-serif;
+  }
+  #stage{display:flex;align-items:center;justify-content:center;width:100%}
+  .wrap{position:relative;display:flex;align-items:center}
+
+  /* Small black ribbon behind text */
+  .bar{
+    position:relative;
+    background:rgba(0,0,0,.85);
+    padding:10px 22px 12px;
+    border-radius:8px;
+  }
+
+  .live-row{display:flex;align-items:center;gap:10px}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+  .now{display:inline-flex;align-items:center;font-family:Arial,sans-serif;font-size:11px;letter-spacing:3px;color:#fff;font-weight:700;line-height:1}
+  .now .emoji{font-size:18px;line-height:1;letter-spacing:0;margin-right:6px}
+  .name{
+    margin-top:5px;font-size:58px;line-height:.9;letter-spacing:1px;white-space:nowrap;
+    font-style:italic;color:#fff;text-shadow:3px 3px 0 #000;
+    font-variant-numeric:tabular-nums;
+  }
+  .name #liveCount{color:#fff}
+  .name .goal-dim{color:#fff;font-size:.65em;letter-spacing:2px}
+  /* tiny back nav — outside banner crop, for navigation only */
+  #back-link{
+    position:fixed;right:14px;bottom:12px;z-index:99;
+    font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;
+    color:#fff;text-decoration:none;background:rgba(0,0,0,.65);
+    border:1px solid rgba(255,255,255,.25);padding:7px 12px;border-radius:99px;
+  }
+  #back-link:hover{background:#FF0033;border-color:#FF0033}
+</style>
+</head>
+<body>
+<a id="back-link" href="./index.html">← BACK</a>
+<div id="stage">
+  <div class="wrap">
+    <div class="bar">
+      <div class="live-row"><span class="now"><span class="emoji">🎯</span> SUB TARGET</span></div>
+      <div class="name"><span id="liveCount">—</span> <span class="goal-dim">/ 1500 SUBS</span></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const DEFAULT_API_KEY = "AIzaSyCLaLEZHJjVxd2FBe6Gy8qmYOMr-n2a1Ac";
+  const DEFAULT_CHANNEL_ID = "UCMloDMJ9OxIhibWtPWxs4Ag";
+  const REFRESH_MS = 10 * 1000; // silent every 10s
+
+  const qs = new URLSearchParams(location.search);
+  const API_KEY = qs.get('key') || qs.get('apiKey') || DEFAULT_API_KEY;
+  const CHANNEL_ID = qs.get('channelId') || qs.get('channel') || DEFAULT_CHANNEL_ID;
+
+  const el = document.getElementById('liveCount');
+
+  // Test override: ?test=10 / ?test=100 / ?test=1000 — shows that number instantly, skips API.
+  const TEST = qs.get('test') ?? qs.get('count');
+  if (TEST !== null && TEST !== '') {
+    el.textContent = Number(TEST).toLocaleString('en-US');
+  } else {
+    // Silent refresh: background fetch, only patches the number. No reload / no flicker.
+    async function refresh(){
+      try {
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${encodeURIComponent(CHANNEL_ID)}&key=${encodeURIComponent(API_KEY)}`);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        const count = data.items?.[0]?.statistics?.subscriberCount;
+        if (count !== undefined) el.textContent = Number(count).toLocaleString('en-US');
+      } catch(e) {
+        console.warn('livecount silent retry in 10s:', e);
+        // keep old value on error — silent
+      }
+    }
+
+    refresh();
+    setInterval(refresh, REFRESH_MS);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+  }
+})();
+</script>
+</body>
+</html>
